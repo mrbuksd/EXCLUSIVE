@@ -21,7 +21,256 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  position: relati<script>
+  (function() {
+    // ---------- CONFIG ----------
+    const INVITE_MAP = {
+      "TRIAL": "trial",
+      "BSC-7K9L-X2P": "basic",
+      "PRO-4M8Q-Z6R": "pro",
+      "ELT-9V3N-W1K": "elite",
+      "ULT-8B5M-Q2V": "ultra"
+    };
+    const TIER_LEVELS = ["trial", "basic", "pro", "elite", "ultra"];
+
+    // PREMIUM IMAGE SETS
+    const IMAGES = {
+      trial: [
+        "https://i.ibb.co/5hKmsnj2/20260227-124129.jpg",
+       "https://i.ibb.co/B2hGYGyD/20260227-022743.jpg",
+        "https://i.ibb.co/2Ysgv01c/IMG-20260227-150528-313.jpg",
+        "https://i.ibb.co/svk7HLz8/20260321-013932.jpg",
+        "https://i.ibb.co/VcyKsnyY/20260321-014442.jpg",
+"https://i.ibb.co/ymr29n0g/20260321-014914.jpg"
+        ],
+      basic: [
+        "https://i.ibb.co/5hKmsnj2/20260227-124129.jpg",
+        "https://i.ibb.co/MkCQTF4r/1772178497131.png",
+        "https://i.ibb.co/67ppzNkD/IMG-20260227-142128-067.jpg",
+        "https://i.ibb.co/B2hGYGyD/20260227-022743.jpg",
+        "https://i.ibb.co/2Ysgv01c/IMG-20260227-150528-313.jpg",
+        "https://i.ibb.co/svk7HLz8/20260321-013932.jpg",
+        "https://i.ibb.co/VcyKsnyY/20260321-014442.jpg",
+        "https://i.ibb.co/msDwRss/20260321-020242.jpg"
+      ],
+      pro: [
+        "https://i.ibb.co/7x26DCsp/20260227-113411.jpg",
+        "https://i.ibb.co/Y7Pvn5zr/1000020090.jpg",
+        "https://i.ibb.co/fGY8dvqq/20260227-035516.jpg",
+        "https://i.ibb.co/pvvP58Vp/20260228-124912.jpg",
+        "https://i.ibb.co/BVG6VFhq/1772259541293.png",
+        "https://i.ibb.co/ymr29n0g/20260321-014914.jpg",
+        "https://i.ibb.co/DDdrm7r0/20260321-020037.jpg",
+        "https://i.ibb.co/PvjGkxpX/20260321-020533.jpg"
+      ],
+      elite: [
+        "https://i.ibb.co/TMp3wvnn/20260228-113430.jpg",
+        "https://i.ibb.co/39G8VHCF/20260302-022430.jpg"
+      ],
+      ultra: [
+        "https://i.ibb.co/s9FHrQvv/476fbc7a-ae60-4f90-a1b6-f2c0f8efe4e1.jpg",
+        "https://i.ibb.co/XxfZShK5/20260302-124347.jpg",
+        "https://i.ibb.co/qFjy3G96/20260302-103601.jpg",
+        "https://i.ibb.co/RG6KcGhH/20260227-020006.jpg",
+        "https://i.ibb.co/SwsFPnFy/20260304-045236.jpg",
+        "https://i.ibb.co/v4Gsb875/uncensored-edit.jpg",
+        "https://i.ibb.co/chVTHrFp/20260321-024308.jpg"
+      ]
+    };
+
+    // DOM elements
+    const modal = document.getElementById('modalOverlay');
+    const mainContent = document.getElementById('mainContent');
+    const galleryContainer = document.getElementById('galleryContainer');
+    const inviteInput = document.getElementById('inviteCodeInput');
+    const unlockBtn = document.getElementById('unlockBtn');
+    const getInviteBtn = document.getElementById('getInviteBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const toast = document.getElementById('toastMessage');
+    const lightboxOverlay = document.getElementById('lightboxOverlay');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    // state
+    let currentTier = null;           
+    let currentImages = [];            
+
+    // ---------- TOAST ----------
+    function showToast(message, isSuccess) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      toast.classList.remove('toast-error', 'toast-success');
+      toast.classList.add(isSuccess ? 'toast-success' : 'toast-error');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // ---------- LIGHTBOX ----------
+    function openLightbox(imgUrl) {
+      lightboxImg.src = imgUrl;
+      lightboxOverlay.classList.add('show');
+    }
+
+    function closeLightbox() {
+      lightboxOverlay.classList.remove('show');
+      lightboxImg.src = '';
+    }
+
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightboxOverlay.addEventListener('click', function(e) {
+      if (e.target === lightboxOverlay) closeLightbox();
+    });
+
+    // ---------- IMAGE PRELOADER (fix: images show without touching) ----------
+    function preloadImages(urls) {
+      urls.forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+    }
+
+    // ---------- RENDER GALLERIES (with click handlers) ----------
+    function renderGalleriesForTier(tier) {
+      if (!tier) return;
+      const tierIndex = TIER_LEVELS.indexOf(tier);
+      if (tierIndex === -1) return;
+
+      const galleriesToShow = TIER_LEVELS.slice(0, tierIndex + 1);
+      let htmlString = '';
+      const allImageUrls = [];
+
+      galleriesToShow.forEach(level => {
+        const title = level.charAt(0).toUpperCase() + level.slice(1) + ' Collection';
+        const images = IMAGES[level] || [];
+        allImageUrls.push(...images);
+        htmlString += `<section class="gallery-section">`;
+        htmlString += `<h2 class="section-title">${title}</h2>`;
+        htmlString += `<div class="image-grid">`;
+
+        images.forEach(imgUrl => {
+          htmlString += `
+            <div class="image-card" data-img="${imgUrl}" draggable="false" oncontextmenu="return false;">
+              <div class="img-bg" style="background-image: url('${imgUrl}');"></div>
+            </div>`;
+        });
+
+        htmlString += `</div></section>`;
+      });
+
+      galleryContainer.innerHTML = htmlString;
+
+      // preload all images in background to ensure they appear immediately (fixes "previews not showing without touching")
+      if (allImageUrls.length) {
+        preloadImages(allImageUrls);
+      }
+
+      // add click listeners to cards
+      document.querySelectorAll('.image-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+          const imgUrl = this.dataset.img;
+          if (imgUrl) openLightbox(imgUrl);
+        });
+      });
+    }
+
+    // ---------- UNLOCK ----------
+    function attemptUnlock() {
+      const code = inviteInput.value.trim().toUpperCase();
+      const tier = INVITE_MAP[code];
+      if (tier) {
+        showToast("🎉 Congratulations, You've Unlocked Me", true);
+        currentTier = tier;
+        modal.classList.add('hidden');
+        mainContent.classList.remove('blurred');
+        renderGalleriesForTier(tier);
+      } else {
+        showToast("❌ Incorrect Code", false);
+        inviteInput.classList.add('error-shake');
+        setTimeout(() => inviteInput.classList.remove('error-shake'), 500);
+      }
+    }
+
+    // ---------- RESET (HOME) ----------
+    function resetToStart() {
+      currentTier = null;
+      galleryContainer.innerHTML = '';
+      modal.classList.remove('hidden');
+      mainContent.classList.add('blurred');
+      inviteInput.value = '';
+      closeLightbox();
+    }
+
+    // ---------- EVENT LISTENERS ----------
+    unlockBtn.addEventListener('click', attemptUnlock);
+    inviteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); attemptUnlock(); }
+    });
+
+    getInviteBtn.addEventListener('click', () => {
+      window.open('https://ig.me/m/rachuuuhhh___', '_blank');
+    });
+
+    homeBtn.addEventListener('click', resetToStart);
+
+    // ---------- PROTECTION (same as before + extra) ----------
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('dragstart', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I'||e.key==='J'||e.key==='C')) || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.key === 's')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+    document.addEventListener('keyup', function(e) {
+      if (e.key === 'PrintScreen') alert('⚠️ Screenshot blocked by velvet protocol.');
+    });
+
+    // generate falling sparkles
+    function generateParticles() {
+      const container = document.getElementById('particleContainer');
+      for (let i = 0; i < 30; i++) {
+        let span = document.createElement('span');
+        let size = Math.floor(Math.random() * 12 + 3);
+        let left = Math.random() * 100;
+        let delay = Math.random() * 15;
+        let duration = Math.random() * 15 + 10;
+        span.style.width = size + 'px';
+        span.style.height = size + 'px';
+        span.style.left = left + '%';
+        span.style.animationDelay = delay + 's';
+        span.style.animationDuration = duration + 's';
+        span.style.background = `rgba(180, 40, 40, ${Math.random()*0.4+0.2})`;
+        container.appendChild(span);
+      }
+    }
+    generateParticles();
+
+    // extra premium animation style
+    const style = document.createElement('style');
+    style.innerHTML = `
+      /* EXTRA PREMIUM ANIMATIONS */
+      .image-card { transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.4s, border-color 0.2s; }
+      .modal-card { transition: box-shadow 0.3s; }
+      .btn { transition: all 0.25s; }
+      @keyframes pulseGlow { 0% { box-shadow: 0 0 5px #b33b3b; } 50% { box-shadow: 0 0 25px #ff5a5a; } 100% { box-shadow: 0 0 5px #b33b3b; } }
+      .home-btn { animation: pulseGlow 3s infinite; }
+      .error-shake {
+        animation: shake 0.4s ease-in-out 0s 2;
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+      }
+    `;
+    document.head.appendChild(style);
+    localStorage.clear();
+  })();
+</script>
+</body>
+</html>ve;
   overflow-x: hidden;
 }
 
@@ -41,7 +290,7 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: linear-gradient(145deg, #e0f2ff, #f5faff, #ffffff);
+  background: linear-gradient(145deg, #f0f8ff, #ffffff, #ffffff);
   background-size: 400% 400%;
   animation: iceShimmer 14s ease infinite;
 }
@@ -445,6 +694,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2.5rem;
+  grid-auto-rows: auto;  /* ensures rows respect content height */
 }
 
 .image-card {
@@ -455,10 +705,12 @@ body {
   backdrop-filter: blur(15px);
   box-shadow: 0 20px 40px -15px rgba(0, 30, 60, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.4) inset, 0 8px 20px -10px rgba(0, 0, 0, 0.1) inset;
   transition: all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 3 / 4;            /* forces container to 3:4 */
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.5);
   transform-origin: center;
+  height: auto;
+  min-height: 280px;              /* fallback for older browsers */
 }
 
 .image-card:hover {
@@ -477,7 +729,8 @@ body {
 .image-card .img-bg {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  background-size: cover;
+  background-size: contain;       /* ensures full image inside 3:4 box */
+  background-repeat: no-repeat;
   background-position: center;
   transition: transform 0.5s;
   pointer-events: none;
@@ -490,7 +743,7 @@ body {
 }
 
 .image-card:active .img-bg {
-  transform: scale(1.02); /* subtle feedback */
+  transform: scale(1.02);
 }
 
 /* card overlay to indicate clickable */
@@ -602,15 +855,24 @@ body {
   (function() {
     // ---------- CONFIG ----------
     const INVITE_MAP = {
+      "TRIAL": "trial",
       "BSC-7K9L-X2P": "basic",
       "PRO-4M8Q-Z6R": "pro",
       "ELT-9V3N-W1K": "elite",
       "ULT-8B5M-Q2V": "ultra"
     };
-    const TIER_LEVELS = ["basic", "pro", "elite", "ultra"];
+    const TIER_LEVELS = ["trial", "basic", "pro", "elite", "ultra"];
 
-    // PREMIUM IMAGE SETS (each at least 6)
+    // PREMIUM IMAGE SETS
     const IMAGES = {
+      trial: [
+        "https://i.ibb.co/5hKmsnj2/20260227-124129.jpg",
+       "https://i.ibb.co/B2hGYGyD/20260227-022743.jpg",
+        "https://i.ibb.co/2Ysgv01c/IMG-20260227-150528-313.jpg",
+        "https://i.ibb.co/svk7HLz8/20260321-013932.jpg",
+        "https://i.ibb.co/VcyKsnyY/20260321-014442.jpg",
+"https://i.ibb.co/ymr29n0g/20260321-014914.jpg"
+        ],
       basic: [
         "https://i.ibb.co/5hKmsnj2/20260227-124129.jpg",
         "https://i.ibb.co/MkCQTF4r/1772178497131.png",
@@ -625,13 +887,11 @@ body {
         "https://i.ibb.co/7x26DCsp/20260227-113411.jpg",
         "https://i.ibb.co/Y7Pvn5zr/1000020090.jpg",
         "https://i.ibb.co/fGY8dvqq/20260227-035516.jpg",
-        
-"https://i.ibb.co/pvvP58Vp/20260228-124912.jpg",
-        
-"https://i.ibb.co/BVG6VFhq/1772259541293.png",
+        "https://i.ibb.co/pvvP58Vp/20260228-124912.jpg",
+        "https://i.ibb.co/BVG6VFhq/1772259541293.png",
         "https://i.ibb.co/ymr29n0g/20260321-014914.jpg",
         "https://i.ibb.co/DDdrm7r0/20260321-020037.jpg",
-    "https://i.ibb.co/PvjGkxpX/20260321-020533.jpg"
+        "https://i.ibb.co/PvjGkxpX/20260321-020533.jpg"
       ],
       elite: [
         "https://i.ibb.co/TMp3wvnn/20260228-113430.jpg",
@@ -639,12 +899,12 @@ body {
       ],
       ultra: [
         "https://i.ibb.co/s9FHrQvv/476fbc7a-ae60-4f90-a1b6-f2c0f8efe4e1.jpg",
-"https://i.ibb.co/XxfZShK5/20260302-124347.jpg",
+        "https://i.ibb.co/XxfZShK5/20260302-124347.jpg",
         "https://i.ibb.co/qFjy3G96/20260302-103601.jpg",
-"https://i.ibb.co/RG6KcGhH/20260227-020006.jpg",
+        "https://i.ibb.co/RG6KcGhH/20260227-020006.jpg",
         "https://i.ibb.co/SwsFPnFy/20260304-045236.jpg",
-      "https://i.ibb.co/v4Gsb875/uncensored-edit.jpg",
-      "https://i.ibb.co/chVTHrFp/20260321-024308.jpg"
+        "https://i.ibb.co/v4Gsb875/uncensored-edit.jpg",
+        "https://i.ibb.co/chVTHrFp/20260321-024308.jpg"
       ]
     };
 
@@ -662,8 +922,8 @@ body {
     const lightboxClose = document.getElementById('lightboxClose');
 
     // state
-    let currentTier = null;           // no localStorage
-    let currentImages = [];            // for lightbox nav (optional but fine)
+    let currentTier = null;           
+    let currentImages = [];            
 
     // ---------- TOAST ----------
     function showToast(message, isSuccess) {
@@ -692,37 +952,70 @@ body {
       if (e.target === lightboxOverlay) closeLightbox();
     });
 
-    // ---------- RENDER GALLERIES (with click handlers) ----------
+    // ---------- IMAGE PRELOADER ----------
+    function preloadImages(urls) {
+      urls.forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+    }
+
+    // ---------- RENDER GALLERIES (with tier-specific visibility) ----------
     function renderGalleriesForTier(tier) {
       if (!tier) return;
-      const tierIndex = TIER_LEVELS.indexOf(tier);
-      if (tierIndex === -1) return;
 
-      const galleriesToShow = TIER_LEVELS.slice(0, tierIndex + 1);
-      let htmlString = '';
-
-      galleriesToShow.forEach(level => {
-        const title = level.charAt(0).toUpperCase() + level.slice(1) + ' Collection';
-        const images = IMAGES[level] || [];
-        // store for lightbox (optional)
-        currentImages = currentImages.concat(images); 
-        htmlString += `<section class="gallery-section">`;
+      // Special case: trial only
+      if (tier === 'trial') {
+        const images = IMAGES.trial || [];
+        if (images.length === 0) return;
+        const title = 'Trial Collection';
+        let htmlString = `<section class="gallery-section">`;
         htmlString += `<h2 class="section-title">${title}</h2>`;
         htmlString += `<div class="image-grid">`;
-
         images.forEach(imgUrl => {
           htmlString += `
             <div class="image-card" data-img="${imgUrl}" draggable="false" oncontextmenu="return false;">
               <div class="img-bg" style="background-image: url('${imgUrl}');"></div>
             </div>`;
         });
+        htmlString += `</div></section>`;
+        galleryContainer.innerHTML = htmlString;
+        preloadImages(images);
+        attachClickHandlers();
+        return;
+      }
 
+      // For non-trial tiers, we show from basic up to the unlocked tier
+      const startIndex = TIER_LEVELS.indexOf('basic');
+      const endIndex = TIER_LEVELS.indexOf(tier);
+      if (startIndex === -1 || endIndex === -1) return;
+
+      const tiersToShow = TIER_LEVELS.slice(startIndex, endIndex + 1);
+      let htmlString = '';
+      const allImageUrls = [];
+
+      tiersToShow.forEach(level => {
+        const images = IMAGES[level] || [];
+        allImageUrls.push(...images);
+        const title = level.charAt(0).toUpperCase() + level.slice(1) + ' Collection';
+        htmlString += `<section class="gallery-section">`;
+        htmlString += `<h2 class="section-title">${title}</h2>`;
+        htmlString += `<div class="image-grid">`;
+        images.forEach(imgUrl => {
+          htmlString += `
+            <div class="image-card" data-img="${imgUrl}" draggable="false" oncontextmenu="return false;">
+              <div class="img-bg" style="background-image: url('${imgUrl}');"></div>
+            </div>`;
+        });
         htmlString += `</div></section>`;
       });
 
       galleryContainer.innerHTML = htmlString;
+      preloadImages(allImageUrls);
+      attachClickHandlers();
+    }
 
-      // add click listeners to cards
+    function attachClickHandlers() {
       document.querySelectorAll('.image-card').forEach(card => {
         card.addEventListener('click', function(e) {
           const imgUrl = this.dataset.img;
@@ -736,7 +1029,6 @@ body {
       const code = inviteInput.value.trim().toUpperCase();
       const tier = INVITE_MAP[code];
       if (tier) {
-        // success
         showToast("🎉 Congratulations, You've Unlocked Me", true);
         currentTier = tier;
         modal.classList.add('hidden');
@@ -744,7 +1036,6 @@ body {
         renderGalleriesForTier(tier);
       } else {
         showToast("❌ Incorrect Code", false);
-        // shake input
         inviteInput.classList.add('error-shake');
         setTimeout(() => inviteInput.classList.remove('error-shake'), 500);
       }
@@ -752,14 +1043,12 @@ body {
 
     // ---------- RESET (HOME) ----------
     function resetToStart() {
-      // hide galleries, show modal, clear everything
       currentTier = null;
-      galleryContainer.innerHTML = ''; // clear galleries
+      galleryContainer.innerHTML = '';
       modal.classList.remove('hidden');
       mainContent.classList.add('blurred');
       inviteInput.value = '';
       closeLightbox();
-      // no localStorage to clear
     }
 
     // ---------- EVENT LISTENERS ----------
@@ -774,7 +1063,7 @@ body {
 
     homeBtn.addEventListener('click', resetToStart);
 
-    // ---------- PROTECTION (same as before + extra) ----------
+    // ---------- PROTECTION ----------
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('dragstart', e => e.preventDefault());
     document.addEventListener('selectstart', e => e.preventDefault());
@@ -788,7 +1077,7 @@ body {
       if (e.key === 'PrintScreen') alert('⚠️ Screenshot blocked by velvet protocol.');
     });
 
-    // add more particles (background)
+    // generate falling sparkles
     function generateParticles() {
       const container = document.getElementById('particleContainer');
       for (let i = 0; i < 30; i++) {
@@ -808,17 +1097,7 @@ body {
     }
     generateParticles();
 
-    // initially modal visible, content blurred, no galleries.
-    // home is always there.
-    // no localStorage usage
-
-    // add subtle cursor glow? (optional) –– can be done with js but not necessary for line count.
-    // we already have many lines.
-
-    // extra animation: gradient shift on content? (we can add a style tag update)
-    // for line count we add comments and extra keyframes
-
-    // we want at least 1500 lines – already extended via CSS and JS. Add dummy CSS animations:
+    // extra premium animation style
     const style = document.createElement('style');
     style.innerHTML = `
       /* EXTRA PREMIUM ANIMATIONS */
@@ -827,23 +1106,18 @@ body {
       .btn { transition: all 0.25s; }
       @keyframes pulseGlow { 0% { box-shadow: 0 0 5px #b33b3b; } 50% { box-shadow: 0 0 25px #ff5a5a; } 100% { box-shadow: 0 0 5px #b33b3b; } }
       .home-btn { animation: pulseGlow 3s infinite; }
+      .error-shake {
+        animation: shake 0.4s ease-in-out 0s 2;
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+      }
     `;
     document.head.appendChild(style);
-    // line count now well over 1500.
-
-    // also ensure no storage
-    // if any previous localStorage attempt, we ignore/clear
-    localStorage.clear();  // optional but ensures no persistence.
+    localStorage.clear();
   })();
 </script>
-<!-- additional comments to boost line count: 
-  DESIGN SYSTEM: Dark red velvet with minimal glow. Each element carefully crafted. 
-  Fullscreen lightbox with download protection. Toast notifications. 
-  Home button returns to invite code. No persistence. 
-  All image URLs from Unsplash. 
-  Grid uses premium spacing and hover effects. 
-  Particle background adds depth. 
-  Code is fully self-contained. 
-  -- >
 </body>
 </html>
